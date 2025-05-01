@@ -1,0 +1,26 @@
+
+services:
+  vllm-cpu:
+    image: vllm-cpu-env
+    container_name: vllm-cpu-container
+    privileged: true
+    shm_size: "4g"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ports:
+      - "8000:8000"
+    environment:
+      - VLLM_CPU_KVCACHE_SPACE=4
+      - VLLM_CPU_OMP_THREADS_BIND=0-4
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
+      - VLLM_LOG_LEVEL=debug
+      # For Gemma models, we use the following prompt template: --chat-template ...
+    command: >
+      --model=google/gemma-3-1b-pt
+      --dtype=float16
+      --chat-template="{{ bos_token }}{% for message in messages %}{{ message['role'] }}: {{ message['content'] }}{{ eos_token }}{% endfor %}assistant:"
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 6G
